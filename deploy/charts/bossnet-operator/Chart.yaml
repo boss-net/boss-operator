@@ -1,0 +1,26 @@
+apiVersion: v2
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 2.31.3
+description: Bossnet Operator application bundle
+engine: gotpl
+home: https://github.com/Boss-Net
+maintainers:
+  - name: jamiezieziula
+    email: jamie@bossnet.io
+  - name: jimid27
+    email: jimi@bossnet.io
+  - name: parkedwards
+    email: edward@bossnet.io
+  - name: mitchnielsen
+    email: mitchell@bossnet.io
+name: bossnet-operator
+sources:
+  - https://github.com/boss-net/bossnet-operator
+type: application
+# The version and appVersion fields are set automatically by the release tool
+version: v0.0.0
+appVersion: v0.0.0

@@ -1,0 +1,46 @@
+apiVersion: bossnet.io/v1
+kind: BossnetServer
+metadata:
+  name: bossnet-ephemeral
+spec:
+---
+apiVersion: bossnet.io/v1
+kind: BossnetWorkPool
+metadata:
+  name: process-pool
+spec:
+  type: process
+  server:
+    name: bossnet-ephemeral
+  workers: 1
+---
+apiVersion: bossnet.io/v1
+kind: BossnetDeployment
+metadata:
+  name: hello-there
+spec:
+  server:
+    name: bossnet-ephemeral
+
+  workPool:
+    name: process-pool
+
+  deployment:
+    entrypoint: "flows/hello_world.py:hello"
+    pullSteps:
+      - bossnet.deployments.steps.git_clone:
+          repository: https://github.com/Boss-Net/examples.git
+          branch: main
+    parameters:
+      name: "bossnet-operator!"
+    parameterOpenApiSchema:
+      title: Parameters
+      type: object
+      properties:
+        name:
+          default: Marvin
+          position: 0
+          title: name
+          type: string
+      required: []
+      definitions: {}

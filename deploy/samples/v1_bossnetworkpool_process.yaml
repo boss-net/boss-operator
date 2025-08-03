@@ -1,0 +1,14 @@
+apiVersion: bossnet.io/v1
+kind: BossnetWorkPool
+metadata:
+  labels:
+    app.kubernetes.io/name: bossnet-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: sample-pool
+spec:
+  deploymentLabels:
+    deployment: label
+  type: process
+  server:
+    name: bossnet-sqlite
+  workers: 3

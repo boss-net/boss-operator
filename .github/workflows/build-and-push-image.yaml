@@ -1,0 +1,74 @@
+---
+name: Build and Push Image
+
+"on":
+  workflow_call:
+    inputs:
+      environment:
+        description: Determines which docker registry credentials to use
+        required: true
+        type: string
+      image:
+        description: Image name (without the tag & registry)
+        required: true
+        type: string
+      docker-login:
+        description: Whether to log in to Docker Hub
+        required: false
+        type: boolean
+        default: true
+      push:
+        description: Whether to push the image to the registry
+        required: false
+        type: boolean
+        default: true
+
+permissions: {}
+
+jobs:
+  build_push_image:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        if: ${{ inputs.docker-login }}
+        with:
+          # These credentials are managed in Terraform. Depending on the 'environment' value above,
+          # these will either be the credentials for 'dev' or 'prod'.
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Docker image metadata
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: bossnethq/${{ inputs.image }}
+          tags: |
+            # always: short sha
+            type=sha,prefix=,format=short
+            # for pull requests: "pr-123"
+            type=ref,event=pr
+            # for main merges: latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            # for releases: 1.2.3
+            type=semver,pattern={{version}}
+          labels: |
+            org.opencontainers.image.title=bossnet-operator
+            org.opencontainers.image.description=Bossnet Operator image
+            org.opencontainers.image.vendor=Bossnet
+
+      - name: ${{ inputs.push && 'Build and push' || 'Build' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ inputs.push }}
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}

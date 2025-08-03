@@ -1,0 +1,22 @@
+{{ if .Values.rbac.userRoles.bossnetWorkpool.editor.create -}}
+kind: ClusterRole
+apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
+metadata:
+  name: bossnet-workpool:editor
+  labels:
+    app.kubernetes.io/component: bossnet
+rules:
+  - apiGroups: ["bossnet.io"]
+    resources: ["bossnetworkpools"]
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups: ["bossnet.io"]
+    resources: ["bossnetworkpools/status"]
+    verbs: ["get"]
+{{- end }}

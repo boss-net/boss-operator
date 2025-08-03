@@ -1,0 +1,48 @@
+---
+name: Build Images on Pull Requests
+
+"on":
+  pull_request:
+    branches:
+      - main
+    paths:
+      - api/**
+      - cmd/**
+      - internal/**
+      - test/**
+      - Dockerfile
+      - Makefile
+      - .github/workflows/images-prs.yaml
+      - .github/workflows/build-and-push-image.yaml
+      - .github/workflows/tests.yaml
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - unlabeled
+
+permissions: {}
+
+jobs:
+  run_unit_tests:
+    uses: ./.github/workflows/tests.yaml
+    permissions:
+      # required by downstream jobs
+      contents: read
+
+  build_and_push_image_for_prs:
+    uses: ./.github/workflows/build-and-push-image.yaml
+    permissions:
+      # required by downstream jobs
+      actions: read
+      contents: read
+      id-token: write
+      security-events: write
+    with:
+      docker-login: false
+      push: false
+      environment: dev
+      image: bossnet-operator-dev
+    # this is required so that the workflow can read secrets from the environment
+    secrets: inherit

@@ -1,0 +1,18 @@
+{{ if .Values.rbac.userRoles.bossnetServer.viewer.create -}}
+kind: ClusterRole
+apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
+metadata:
+  name: bossnet-server:viewer
+  labels:
+    app.kubernetes.io/component: bossnet
+rules:
+  - apiGroups: ["bossnet.io"]
+    resources: ["bossnetservers"]
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups: ["bossnet.io"]
+    resources: ["bossnetservers/status"]
+    verbs: ["get"]
+{{- end }}

@@ -1,0 +1,74 @@
+---
+name: Build and Push Images on Tags
+
+"on":
+  push:
+    tags:
+      - '*'
+
+permissions: {}
+
+jobs:
+  run_unit_tests:
+    uses: ./.github/workflows/tests.yaml
+    permissions:
+      # required by downstream jobs
+      contents: read
+
+  build_and_upload_manifests:
+    needs: run_unit_tests
+    permissions:
+      # required to write artifacts to a release
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install tool dependencies
+        uses: jdx/mise-action@v2
+        with:
+          experimental: true
+
+      - name: Package kubernetes manifests & CRDs
+        run: |
+          # package just CRDs
+          cat deploy/charts/bossnet-operator/crds/*.yaml > bossnet-crds.yaml
+          make helmbuild
+          # template the helm chart including the CRDs
+          helm template bossnet-operator deploy/charts/bossnet-operator \
+          --include-crds --set operator.image.tag=${{ github.ref_name }} \
+          > bossnet-operator.yaml
+          # Remove labels relevant only for Helm installs
+          yq -i 'del(.metadata.labels."app.kubernetes.io/managed-by")' bossnet-operator.yaml
+          yq -i 'del(.metadata.labels."helm.sh/chart")' bossnet-operator.yaml
+          yq -i 'del(.spec.template.metadata.labels."app.kubernetes.io/managed-by")' bossnet-operator.yaml
+          yq -i 'del(.spec.template.metadata.labels."helm.sh/chart")' bossnet-operator.yaml
+          # Ensure all references to app version match the released version tag
+          yq -i '(.. | select(tag == "!!str" and . == "v0.0.0")) |= "${{ github.ref_name }}"' bossnet-operator.yaml
+
+      - name: Upload release assets
+        run: gh release upload ${{ github.ref_name }} bossnet-crds.yaml bossnet-operator.yaml
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  build_and_push_image_for_tags:
+    needs: run_unit_tests
+    uses: ./.github/workflows/build-and-push-image.yaml
+    with:
+      environment: prod
+      image: bossnet-operator
+    # this is required so that the workflow can read secrets rom the environment
+    secrets: inherit
+
+  create_helm_release:
+    needs: build_and_push_image_for_tags
+    uses: ./.github/workflows/helm-release.yaml
+    permissions:
+      # required by downstream jobs
+      contents: write
+    with:
+      mode: release
+    # this is required so that the workflow can read secrets
+    # from the environment
+    secrets: inherit

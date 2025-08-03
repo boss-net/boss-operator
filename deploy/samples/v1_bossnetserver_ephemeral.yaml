@@ -1,0 +1,14 @@
+apiVersion: bossnet.io/v1
+kind: BossnetServer
+metadata:
+  labels:
+    app.kubernetes.io/name: bossnet-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: bossnet-ephemeral
+spec:
+  deploymentLabels:
+    deployment: label
+    foo: bar
+  serviceLabels:
+    service: label
+    fuzz: buzz
